@@ -1,7 +1,16 @@
 <template>
   <div class="recommend" ref="recommend">
-    <scroll ref="scroll" class="recommend-content" :data="discList">
+    <div ref="scroll" class="recommend-content">
       <div>
+        <div v-if="recommends.length" class="slider-wrapper">
+          <slider>
+            <div v-for="(item, index) in recommends" :key="index">
+              <a :href="item.linkUrl">
+                <img :src="item.picUrl" class="needsclick">
+              </a>
+            </div>
+          </slider>
+        </div>
         <!-- <div v-if="recommends.length" class="slider-wrapper" ref="sliderWrapper">
           <slider>
             <div v-for="item in recommends">
@@ -29,16 +38,22 @@
       <!-- <div class="loading-container" v-show="!discList.length">
         <loading></loading>
       </div> -->
-    </scroll>
+    </div>
     <router-view></router-view>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
+import Slider from 'base/slider/slider'
 import {getRecommend} from 'api/recommend'
 import { ERR_OK } from 'api/config'
 
 export default {
+  data () {
+    return {
+      recommends: []
+    }
+  },
   created () {
     this._getRecommend()
   },
@@ -46,10 +61,13 @@ export default {
     _getRecommend () {
       getRecommend().then(res => {
         if (res.code === ERR_OK) {
-          console.info(res.data.slider)
+          this.recommends = res.data.slider
         }
       })
     }
+  },
+  components: {
+    Slider
   }
 }
 </script>
