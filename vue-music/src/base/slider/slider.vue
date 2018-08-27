@@ -3,7 +3,9 @@
     <div class="slider-group" ref="sliderGroup">
       <slot></slot>
     </div>
-    <div class="dots"></div>
+    <div class="dots">
+      <span class="dot" v-for="(item, index) in dots" :key="index" :class="{active: currentPageIndex === index}"></span>
+    </div>
   </div>
 </template>
 
@@ -11,12 +13,18 @@
 import BScroll from 'better-scroll'
 import { addClass } from 'common/js/dom'
 export default {
+  data () {
+    return {
+      dots: [],
+      currentPageIndex: 0
+    }
+  },
   props: {
     loop: {
       type: Boolean,
       default: true
     },
-    autoplay: {
+    autoPlay: {
       type: Boolean,
       default: true
     },
@@ -28,11 +36,23 @@ export default {
   mounted () {
     setTimeout(() => {
       this._setSliderWidth()
+      this._initDots()
       this._initSlider()
+      if (this.autoPlay) {
+        this._play()
+      }
     }, 20)
+
+    window.addEventListener('resize', () => {
+      if (!this.slider) {
+        return
+      }
+      this._setSliderWidth(true)
+      this.slider.refresh() // 重新计算 better-scroll，当 DOM 结构发生变化的时候务必要调用确保滚动的效果正常
+    })
   },
   methods: {
-    _setSliderWidth () {
+    _setSliderWidth (isResize) {
       this.children = this.$refs.sliderGroup.children
       console.info(this.children)
 
@@ -47,11 +67,15 @@ export default {
       }
       console.info(width)
       console.info(this.loop)
-      if (this.loop) {
+      if (this.loop && !isResize) {
         width += 2 * sliderWidth
       }
       this.$refs.sliderGroup.style.width = width + 'px'
       console.info(this.$refs.sliderGroup.style.width)
+    },
+    _initDots () {
+      this.dots = new Array(this.children.length)
+      console.info(this.children.length)
     },
     _initSlider () {
       this.slider = new BScroll(this.$refs.slider, {
@@ -65,7 +89,30 @@ export default {
         },
         click: true
       })
+      this.slider.on('scrollEnd', () => {
+        let pageIndex = this.slider.getCurrentPage().pageX // pageX 表示横轴方向的页面数
+        // console.info(pageIndex)
+        this.currentPageIndex = pageIndex
+        if (this.autoPlay) {
+          clearTimeout(this.timer)
+          this._play()
+        }
+      })
+    },
+    _play () {
+      // let pageIndex = this.currentPageIndex + 1
+      // console.info(pageIndex)
+      // if (this.loop) {
+      //   pageIndex += 1
+      // }
+      this.timer = setTimeout(() => {
+        this.slider.next()
+        // this.slider.goToPage(pageIndex, 0, 400) // pageIndex为x轴方向页数 0 y轴 400毫秒
+      }, this.interval)
     }
+  },
+  destroyed () {
+    clearTimeout(this.timer) // 清理做内存的释放
   }
 }
 </script>
@@ -99,4 +146,15 @@ export default {
     bottom 12px
     text-align center
     font-size 0
+    .dot
+      display inline-block
+      margin 0 4px
+      width 8px
+      height 8px
+      border-radius 50%
+      background $color-text-l
+      &.active
+        width 20px
+        border-radius 5px
+        background: $color-text-ll
 </style>
